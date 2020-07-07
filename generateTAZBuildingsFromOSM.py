@@ -189,13 +189,22 @@ class GenerateTAZandWeightsFromOSM():
                     continue
 
                 list_of_nodes = []
+                count_success = 0
+                count_fail = 0
                 if 'member' in boundary:
                     for member in boundary['member']:
                         if member['type'] == 'way':
                             if 'nd' in self._osm_boundaries['way'][member['ref']]:
                                 for node in self._osm_boundaries['way'][member['ref']]['nd']:
                                     coord = self._osm_boundaries['node'][node['ref']]
-                                    list_of_nodes.append((float(coord['lon']), float(coord['lat'])))
+                                    try:
+                                        list_of_nodes.append((float(coord['lon']), float(coord['lat'])))
+                                        count_success += 1
+                                    except:
+                                        count_fail += 1
+                logging.info("Obtained coordinates of boundary nodes\n" +
+                      " Successes: {0}, failures: {1}".format(count_success,
+                                                              count_fail))
 
                 ## --------------------------- Consistency checks ----------------------------------
                 if len(list_of_nodes) <= 2:
@@ -311,6 +320,8 @@ class GenerateTAZandWeightsFromOSM():
     def _filter_buildings_from_osm(self):
         """ Extract buildings from OSM structure. """
         nodes = dict()
+        count_fail = 0
+        count_success = 0
         for node in tqdm(self._osm['node']):
             nodes[node['id']] = node
         for way in tqdm(self._osm['way']):
@@ -319,7 +330,14 @@ class GenerateTAZandWeightsFromOSM():
             self._osm_buildings[way['id']] = way
             self._osm_buildings[way['id']]['nodes'] = list()
             for ndid in way['nd']:
-                self._osm_buildings[way['id']]['nodes'].append(nodes[ndid['ref']])
+                try:
+                    self._osm_buildings[way['id']]['nodes'].append(nodes[ndid['ref']])
+                    count_success += 1
+                except Exception:
+                    count_fail += 1
+        logging.info("Obtained buildings\n" +
+              " Successes: {0}, failures: {1}".format(count_success,
+                                                      count_fail))
         logging.info('Found %d buildings.', len(self._osm_buildings.keys()))
 
     def _processing_buildings(self):
